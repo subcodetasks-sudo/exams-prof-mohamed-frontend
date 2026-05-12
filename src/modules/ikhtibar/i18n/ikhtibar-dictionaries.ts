@@ -29,8 +29,8 @@ const ar = {
   langAr: "العربية",
   langEn: "English",
 
-  heroTeacherAlt: "د. طارق صلاح — مؤسس منصة اختبر",
-  heroTeacherName: "د. طارق صلاح",
+  heroTeacherAlt: "الأستاذ محمد الجندي — مؤسس منصة اختبر",
+  heroTeacherName: "الأستاذ محمد الجندي",
   heroTeacherTitle: "مؤسس منصة اختبر",
   heroTeacherBio: "خبرة أكثر من 10 سنوات في التدريس",
 
@@ -122,8 +122,8 @@ const en = {
   langAr: "العربية",
   langEn: "English",
 
-  heroTeacherAlt: "Dr. Tarek Salah — founder of Ikhtibar",
-  heroTeacherName: "Dr. Tarek Salah",
+  heroTeacherAlt: "Mr. Mohamed El-Gendy — founder of Ikhtibar",
+  heroTeacherName: "Mr. Mohamed El-Gendy",
   heroTeacherTitle: "Founder of Ikhtibar",
   heroTeacherBio: "More than 10 years of teaching experience",
 

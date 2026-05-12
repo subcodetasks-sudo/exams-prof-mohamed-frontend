@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
-import heroPortrait from "../images/dr-tarek.jpeg";
 import { easeOut, staggerItem, staggerParent, viewportOnce } from "@/src/modules/ikhtibar/animation";
 import { useIkhtibarLocale } from "@/src/modules/ikhtibar/i18n/ikhtibar-locale-context";
 import { useIkhtibarMotion } from "@/src/modules/ikhtibar/use-ikhtibar-motion";
@@ -130,7 +129,7 @@ export function IkhtibarHero() {
                 )}
               >
                 <Image
-                  src={heroPortrait}
+                  src="/prof-mohamed.jpeg"
                   alt={t("heroTeacherAlt")}
                   fill
                   className="object-cover object-[center_12%]"

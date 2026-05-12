@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "motion/react";
 
-import logoSrc from "../images/blue-star.png";
 import { easeOut } from "@/src/modules/ikhtibar/animation";
 import { useIkhtibarLocale } from "@/src/modules/ikhtibar/i18n/ikhtibar-locale-context";
 import { useIkhtibarMotion } from "@/src/modules/ikhtibar/use-ikhtibar-motion";
@@ -46,12 +45,12 @@ export function IkhtibarHeader() {
               transition={{ type: "spring", stiffness: 400, damping: 22 }}
             >
               <Image
-                src={logoSrc}
+                src="/exams-logo.jpeg"
                 alt=""
-                width={240}
-                height={72}
+                width={565}
+                height={537}
                 className="h-9 w-auto max-w-[min(200px,70vw)] object-contain sm:h-10 sm:max-w-[240px]"
-                sizes="240px"
+                sizes="(max-width: 640px) 70vw, 240px"
                 priority
                 aria-hidden
               />

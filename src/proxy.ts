@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+const PUBLIC_STATIC_EXT =
+  /\.(?:avif|gif|ico|jpe?g|png|svg|webp|woff2?)(?:\?|$)/i;
+
 export function proxy(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const { pathname } = request.nextUrl;
+
+  // `public/*` is served at `/<filename>`; must not redirect to /signin or images break
+  if (pathname !== "/" && PUBLIC_STATIC_EXT.test(pathname)) {
+    return NextResponse.next();
+  }
 
   // Auth pages (sign in / up)
   const isAuthRoute = pathname === "/signin" || pathname === "/signup";
