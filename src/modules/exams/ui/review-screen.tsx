@@ -27,24 +27,12 @@ export default function ReviewScreen({
               Check Your Work
             </h1>
             <div className="space-y-2 text-gray-600">
-              {moduleALocked ? (
-                <p className="text-red-600 font-semibold">
-                  Time has expired for this module. You cannot return to these
-                  questions.
-                </p>
-              ) : (
-                <>
-                  <p>
-                    On test day, you won't be able to move on to the next module
-                    until time expires.
-                  </p>
-                  <p>
-                    For these practice questions, you can click{" "}
-                    <span className="font-semibold">Next</span> when you're
-                    ready to move on.
-                  </p>
-                </>
-              )}
+              <p>
+                Please review your answers before submitting the exam.
+              </p>
+              <p>
+                Click <span className="font-semibold">Next</span> to submit your answers.
+              </p>
             </div>
           </div>
 

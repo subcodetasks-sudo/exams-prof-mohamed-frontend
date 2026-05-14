@@ -54,7 +54,7 @@ type ExamStartResponse = {
           name: string;
           questions: Question[];
         };
-        model_b: {
+        model_b?: {
           name: string;
           questions: Question[];
         };
@@ -117,10 +117,7 @@ const clearExamStorage = (examId: string | string[] | undefined) => {
   if (typeof window === "undefined") return;
   const keys = [
     "start_time",
-    "module_a_start_time",
-    "module_b_start_time",
     "total_duration",
-    "module_duration",
   ];
   keys.forEach((key) => {
     const storageKey = getStorageKey(examId, key);
@@ -139,17 +136,13 @@ export default function DynamicExam() {
   const [showCalculator, setShowCalculator] = useState(false);
   const [showHelpSheet, setHelpSheet] = useState(false);
   const [currentModule, setCurrentModule] = useState<
-    "model_a" | "model_b" | "review_a" | "review_b"
+    "model_a" | "review"
   >("model_a");
   const [showReview, setShowReview] = useState(false);
-  const [moduleALocked, setModuleALocked] = useState(false);
-  const [moduleBLocked, setModuleBLocked] = useState(false);
   const [userExamId, setUserExamId] = useState<number | null>(null);
   const [examStarted, setExamStarted] = useState(false);
   const [totalExamTime, setTotalExamTime] = useState<number>(0);
   const [examStartTime, setExamStartTime] = useState<Date | null>(null);
-  const [moduleAStartTime, setModuleAStartTime] = useState<Date | null>(null);
-  const [moduleBStartTime, setModuleBStartTime] = useState<Date | null>(null);
 
   // Protect the exam route from direct access
   useEffect(() => {
@@ -181,7 +174,7 @@ export default function DynamicExam() {
 
   // Prepare answers for submission
   const prepareAnswers = () => {
-    const allQuestions = [...modelAQuestions, ...modelBQuestions];
+    const allQuestions = [...modelAQuestions];
     // Use selectedRef.current instead of selected to get the latest values
     const answers = allQuestions
       .filter((q) => selectedRef.current[q.id])
@@ -208,51 +201,6 @@ export default function DynamicExam() {
     };
   };
 
-  // COMMENTED OUT: Handle exam submission due to cheating
-  // const handleCheatingSubmit = () => {
-  //   if (!userExamId) {
-  //     console.error("No user_exam_id available for submission");
-  //     return;
-  //   }
-
-  //   // Use the ref to get the latest answers
-  //   const allQuestions = [...modelAQuestions, ...modelBQuestions];
-  //   const answers = allQuestions
-  //     .filter((q) => selectedRef.current[q.id])
-  //     .map((q) => {
-  //       const answer = selectedRef.current[q.id];
-
-  //       if (q.type === "mcq") {
-  //         return {
-  //           user_exam_question_id: q.id,
-  //           answer_id: parseInt(answer),
-  //         };
-  //       } else {
-  //         return {
-  //           user_exam_question_id: q.id,
-  //           answer_text: answer,
-  //         };
-  //       }
-  //     });
-
-  //   const payload = {
-  //     user_exam_id: userExamId,
-  //     has_cheated: true,
-  //     cheating_reason: isInFullscreen
-  //       ? "Student out the full screen"
-  //       : "The student open another tab",
-  //     answers, // Now includes the actual answers
-  //   };
-
-  //   submitExamMutation.mutate(payload);
-  // };
-
-  // COMMENTED OUT: Use the proctoring hook
-  // const { showWarning, countdown, isInFullscreen, hasFocus, isTimerActive } =
-  //   useExamProctor({
-  //     onViolationTimeout: handleCheatingSubmit,
-  //     isEnabled: examStarted,
-  //   });
 
   // Enroll Mutation
   const enrollMutation = useMutation({
@@ -283,8 +231,6 @@ export default function DynamicExam() {
         totalSeconds = 10;
       }
 
-      const moduleDuration = Math.floor(totalSeconds / 2);
-
       // Calculate elapsed time since exam started
       const elapsedTotal = Math.floor(
         (currentTime.getTime() - serverStartTime.getTime()) / 1000
@@ -294,7 +240,6 @@ export default function DynamicExam() {
       // Store in localStorage
       setStoredTime(examId, "start_time", serverStartTime);
       setStoredNumber(examId, "total_duration", totalSeconds);
-      setStoredNumber(examId, "module_duration", moduleDuration);
 
       // CRITICAL: Check if exam has already expired BEFORE setting any state
       // This handles cases where user starts late or the server returns an expired exam
@@ -307,7 +252,6 @@ export default function DynamicExam() {
         setTimeout(() => {
           const allQuestions = [
             ...(response.data.user_exam.models.model_a.questions || []),
-            ...(response.data.user_exam.models.model_b.questions || []),
           ];
           const answers = allQuestions
             .filter((q) => selectedRef.current[q.id])
@@ -338,45 +282,21 @@ export default function DynamicExam() {
         return;
       }
 
-      // Store Module A start time (use server start time or current time)
-      const moduleAStart =
-        getStoredTime(examId, "module_a_start_time") || currentTime;
-      if (!getStoredTime(examId, "module_a_start_time")) {
-        setStoredTime(examId, "module_a_start_time", moduleAStart);
-      }
-
-      // Calculate remaining time for Module A
-      const elapsedModuleA = Math.floor(
-        (currentTime.getTime() - moduleAStart.getTime()) / 1000
-      );
-      const remainingModuleA = Math.max(0, moduleDuration - elapsedModuleA);
-
-      // Use minimum of remaining module time and remaining total time
-      const timeToDisplay = Math.min(remainingModuleA, remainingTotal);
-
       // Update state
       setExamStartTime(serverStartTime);
-      setModuleAStartTime(moduleAStart);
       setTotalExamTime(totalSeconds);
-      setTimeLeft(timeToDisplay);
+      setTimeLeft(remainingTotal);
       setExamStarted(true);
     },
     onError: (error) => {
       console.error("Start exam error:", error);
       // Fallback to 35 minutes total (17.5 minutes per module)
-      const fallbackTotal = 35 * 60;
-      const fallbackModule = Math.floor(fallbackTotal / 2);
-      const now = new Date();
-
       setStoredTime(examId, "start_time", now);
-      setStoredTime(examId, "module_a_start_time", now);
       setStoredNumber(examId, "total_duration", fallbackTotal);
-      setStoredNumber(examId, "module_duration", fallbackModule);
 
       setExamStartTime(now);
-      setModuleAStartTime(now);
       setTotalExamTime(fallbackTotal);
-      setTimeLeft(fallbackModule);
+      setTimeLeft(fallbackTotal);
       setExamStarted(true);
     },
   });
@@ -384,13 +304,8 @@ export default function DynamicExam() {
   // Get exam questions from the start exam response
   const modelAQuestions =
     startExamMutation.data?.data?.user_exam?.models?.model_a?.questions || [];
-  const modelBQuestions =
-    startExamMutation.data?.data?.user_exam?.models?.model_b?.questions || [];
 
-  const questions =
-    currentModule === "model_a" || currentModule === "review_a"
-      ? modelAQuestions
-      : modelBQuestions;
+  const questions = modelAQuestions;
 
   // Initial enrollment and start
   useEffect(() => {
@@ -418,10 +333,8 @@ export default function DynamicExam() {
 
     const storedExamStart = getStoredTime(examId, "start_time");
     const storedTotalDuration = getStoredNumber(examId, "total_duration");
-    const storedModuleDuration = getStoredNumber(examId, "module_duration");
 
-    if (!storedExamStart || !storedTotalDuration || !storedModuleDuration)
-      return;
+    if (!storedExamStart || !storedTotalDuration) return;
 
     const now = new Date();
     const elapsedTotal = Math.floor(
@@ -436,38 +349,7 @@ export default function DynamicExam() {
       return;
     }
 
-    // Determine which module we're in and calculate remaining time
-    const storedModuleBStart = getStoredTime(examId, "module_b_start_time");
-
-    if (storedModuleBStart && currentModule === "model_b") {
-      // We're in Module B
-      const elapsedModuleB = Math.floor(
-        (now.getTime() - storedModuleBStart.getTime()) / 1000
-      );
-      const remainingModuleB = Math.max(
-        0,
-        storedModuleDuration - elapsedModuleB
-      );
-      const timeToDisplay = Math.min(remainingModuleB, remainingTotal);
-      setTimeLeft(timeToDisplay);
-      setModuleBStartTime(storedModuleBStart);
-    } else {
-      // We're in Module A
-      const storedModuleAStart = getStoredTime(examId, "module_a_start_time");
-      if (storedModuleAStart) {
-        const elapsedModuleA = Math.floor(
-          (now.getTime() - storedModuleAStart.getTime()) / 1000
-        );
-        const remainingModuleA = Math.max(
-          0,
-          storedModuleDuration - elapsedModuleA
-        );
-        const timeToDisplay = Math.min(remainingModuleA, remainingTotal);
-        setTimeLeft(timeToDisplay);
-        setModuleAStartTime(storedModuleAStart);
-      }
-    }
-
+    setTimeLeft(remainingTotal);
     setExamStartTime(storedExamStart);
     setTotalExamTime(storedTotalDuration);
   }, [examStarted, examId]);
@@ -483,7 +365,7 @@ export default function DynamicExam() {
         (now.getTime() - examStartTime.getTime()) / 1000
       );
 
-      // Check if total exam time has expired (priority check)
+      // Check if total exam time has expired
       if (elapsedTotal >= totalExamTime) {
         console.warn("Total exam time expired - auto submitting");
         setTimeLeft(0);
@@ -492,54 +374,7 @@ export default function DynamicExam() {
       }
 
       const remainingTotal = Math.max(0, totalExamTime - elapsedTotal);
-      const moduleDuration = Math.floor(totalExamTime / 2);
-
-      // Calculate remaining time for current module
-      if (currentModule === "model_a") {
-        const moduleAStart = moduleAStartTime || examStartTime;
-        const elapsedModuleA = Math.floor(
-          (now.getTime() - moduleAStart.getTime()) / 1000
-        );
-        const remainingModuleA = Math.max(0, moduleDuration - elapsedModuleA);
-
-        // Check if Module A time has expired
-        if (remainingModuleA <= 0 && !moduleALocked) {
-          setModuleALocked(true);
-          setCurrentModule("model_b");
-          setCurrent(0);
-
-          // Store Module B start time
-          const moduleBStart = new Date();
-          setStoredTime(examId, "module_b_start_time", moduleBStart);
-          setModuleBStartTime(moduleBStart);
-
-          // Set time for Module B
-          const timeForModuleB = Math.min(moduleDuration, remainingTotal);
-          setTimeLeft(timeForModuleB);
-          return true; // Continue timer
-        }
-
-        const timeToDisplay = Math.min(remainingModuleA, remainingTotal);
-        setTimeLeft(timeToDisplay);
-      } else if (currentModule === "model_b") {
-        const moduleBStart = moduleBStartTime || examStartTime;
-        const elapsedModuleB = Math.floor(
-          (now.getTime() - moduleBStart.getTime()) / 1000
-        );
-        const remainingModuleB = Math.max(0, moduleDuration - elapsedModuleB);
-
-        // Check if Module B time has expired
-        if (remainingModuleB <= 0 && !moduleBLocked) {
-          setModuleBLocked(true);
-          setTimeLeft(0);
-          handleSubmitExam();
-          return false; // Stop timer
-        }
-
-        const timeToDisplay = Math.min(remainingModuleB, remainingTotal);
-        setTimeLeft(timeToDisplay);
-      }
-
+      setTimeLeft(remainingTotal);
       return true; // Continue timer
     };
 
@@ -559,11 +394,6 @@ export default function DynamicExam() {
     examStarted,
     examStartTime,
     totalExamTime,
-    currentModule,
-    moduleAStartTime,
-    moduleBStartTime,
-    moduleALocked,
-    moduleBLocked,
     examId,
   ]);
 
@@ -639,52 +469,18 @@ export default function DynamicExam() {
   }
 
   const q = questions[current];
-  const moduleTime = Math.floor(totalExamTime / 2);
+  const moduleTime = totalExamTime;
   const progressPercentage =
     ((moduleTime - (timeLeft || 0)) / moduleTime) * 100;
 
   const isEndOfModuleA =
     currentModule === "model_a" && current === modelAQuestions.length - 1;
-  const isEndOfModuleB =
-    currentModule === "model_b" && current === modelBQuestions.length - 1;
 
   const handleNext = () => {
     if (isEndOfModuleA && !showReview) {
       setShowReview(true);
-      setCurrentModule("review_a");
-    } else if (showReview && currentModule === "review_a") {
-      setShowReview(false);
-      setCurrentModule("model_b");
-      setCurrent(0);
-      setModuleALocked(true);
-
-      // Store Module B start time and calculate remaining time
-      const now = new Date();
-      setStoredTime(examId, "module_b_start_time", now);
-      setModuleBStartTime(now);
-
-      // Calculate remaining time for Module B
-      const moduleDuration =
-        getStoredNumber(examId, "module_duration") ||
-        Math.floor(totalExamTime / 2);
-      const storedExamStart =
-        getStoredTime(examId, "start_time") || examStartTime;
-
-      if (storedExamStart) {
-        const elapsedTotal = Math.floor(
-          (now.getTime() - storedExamStart.getTime()) / 1000
-        );
-        const remainingTotal = Math.max(0, totalExamTime - elapsedTotal);
-        const timeForModuleB = Math.min(moduleDuration, remainingTotal);
-        setTimeLeft(timeForModuleB);
-      } else {
-        setTimeLeft(moduleDuration);
-      }
-    } else if (isEndOfModuleB && !showReview) {
-      setShowReview(true);
-      setCurrentModule("review_b");
-    } else if (showReview && currentModule === "review_b") {
-      // Submit exam after Module B review
+      setCurrentModule("review");
+    } else if (showReview && currentModule === "review") {
       handleSubmitExam();
     } else {
       setCurrent((c) => Math.min(questions.length - 1, c + 1));
@@ -692,33 +488,22 @@ export default function DynamicExam() {
   };
 
   const handleReviewBack = () => {
-    if (currentModule === "review_a" && !moduleALocked) {
+    if (currentModule === "review") {
       setShowReview(false);
       setCurrentModule("model_a");
-    } else if (currentModule === "review_b" && !moduleBLocked) {
-      setShowReview(false);
-      setCurrentModule("model_b");
     }
   };
 
   const handleQuestionClick = (index: number) => {
-    if (currentModule === "review_a" && !moduleALocked) {
+    if (currentModule === "review") {
       setCurrent(index);
       setShowReview(false);
       setCurrentModule("model_a");
-    } else if (currentModule === "review_b" && !moduleBLocked) {
-      setCurrent(index);
-      setShowReview(false);
-      setCurrentModule("model_b");
     }
   };
 
   // Show review screen
   if (showReview) {
-    const isModuleA = currentModule === "review_a";
-    const reviewQuestions = isModuleA ? modelAQuestions : modelBQuestions;
-    const moduleLocked = isModuleA ? moduleALocked : moduleBLocked;
-
     return (
       <ReviewScreen
         examData={startExamMutation.data}
@@ -726,8 +511,8 @@ export default function DynamicExam() {
         handleNext={handleNext}
         handleQuestionClick={handleQuestionClick}
         handleReviewBack={handleReviewBack}
-        modelAQuestions={reviewQuestions}
-        moduleALocked={moduleLocked}
+        modelAQuestions={modelAQuestions}
+        moduleALocked={false}
         selected={selected}
       />
     );
@@ -877,13 +662,6 @@ export default function DynamicExam() {
                 >
                   Continue to Review
                 </Button>
-              ) : isEndOfModuleB ? (
-                <Button
-                  onClick={handleNext}
-                  className="gap-1 bg-blue-600 hover:bg-blue-700"
-                >
-                  Continue to Review
-                </Button>
               ) : (
                 <Button
                   variant="outline"
@@ -903,10 +681,10 @@ export default function DynamicExam() {
       <div className="relative">
         <NavigationPopover
           currentModule={currentModule}
-          moduleALocked={moduleALocked}
-          moduleBLocked={moduleBLocked}
+          moduleALocked={false}
+          moduleBLocked={true}
           modelAQuestions={modelAQuestions}
-          modelBQuestions={modelBQuestions}
+          modelBQuestions={[]}
           setCurrent={setCurrent}
           setShowReview={setShowReview}
           setCurrentModule={setCurrentModule}

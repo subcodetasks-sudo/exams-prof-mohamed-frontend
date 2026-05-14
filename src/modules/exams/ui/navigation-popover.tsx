@@ -8,16 +8,14 @@ import {
 } from "@/components/ui/popover";
 
 interface NavigationPopoverProps {
-  currentModule: "model_a" | "model_b" | "review_a" | "review_b";
+  currentModule: "model_a" | "review";
   moduleALocked: boolean;
   moduleBLocked: boolean;
   modelAQuestions: any[];
   modelBQuestions: any[];
   setCurrent: (index: number) => void;
   setShowReview: (show: boolean) => void;
-  setCurrentModule: (
-    module: "model_a" | "model_b" | "review_a" | "review_b"
-  ) => void;
+  setCurrentModule: (module: "model_a" | "review") => void;
 }
 
 export default function NavigationPopover({
@@ -32,12 +30,11 @@ export default function NavigationPopover({
 }: NavigationPopoverProps) {
   const [open, setOpen] = useState(false);
 
-  const isModuleA = currentModule === "model_a";
-  const questions = isModuleA ? modelAQuestions : modelBQuestions;
+  const questions = modelAQuestions;
 
   const handleGoToReview = () => {
     setShowReview(true);
-    setCurrentModule(isModuleA ? "review_a" : "review_b");
+    setCurrentModule("review");
     setOpen(false);
   };
 

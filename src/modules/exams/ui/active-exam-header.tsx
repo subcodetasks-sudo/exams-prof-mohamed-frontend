@@ -16,9 +16,9 @@ export default function ActiveExamHeader({
     <header className="flex items-center justify-between border-b px-6 py-2 bg-gray-100 text-sm font-medium">
       <div className="text-gray-600">
         Mathematics Exam -
-        {currentModule === "model_a" || currentModule === "review_a"
+        {currentModule === "model_a" || currentModule === "review"
           ? examData?.data?.user_exam?.models?.model_a?.name
-          : examData?.data?.user_exam?.models?.model_b?.name}
+          : ""}
       </div>
 
       <div className="text-gray-600 text-2xl font-bold">
